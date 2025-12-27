@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:api.open-meteo.com)",
+      "Bash(dir /s /b \"C:\\\\Users\\\\User3\\\\Downloads\\\\SmartPlanner\\\\SmartPlanner\\\\src\\\\*.java\")",
+      "Bash(.mvnw compile:*)"
+    ]
+  }
+}
