@@ -8,14 +8,6 @@ import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.LocalDateTime;
 
-/**
- * COUNTRY MODEL - Top level entity
- *
- * Hierarchy:
- * Country (UAE)
- *   └── City (Dubai)
- *         └── Activity (Beach, Safari)
- */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -25,10 +17,10 @@ public class Country {
     @Id
     private String id;
 
-    private String name;           // Country name: "United Arab Emirates"
-    private String code;           // Country code: "UAE" or "AE"
-    private String imageUrl;       // Country flag/image
-    private String description;    // Short description
+    private String name;
+    private String code;
+    private String imageUrl;
+    private String description;
     private Boolean isActive = true;
 
     private LocalDateTime createdAt;

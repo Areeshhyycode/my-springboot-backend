@@ -8,12 +8,6 @@ import org.springframework.web.client.RestTemplate;
 
 import java.util.List;
 
-/**
- * GEOCODING SERVICE - City name se latitude/longitude fetch karta hai
- *
- * Uses Open-Meteo Geocoding API (Free, no API key required)
- * API: https://geocoding-api.open-meteo.com/v1/search?name=Dubai
- */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -24,12 +18,6 @@ public class GeocodingService {
     private static final String GEOCODING_API_URL =
             "https://geocoding-api.open-meteo.com/v1/search?name={cityName}&count=1&language=en&format=json";
 
-    /**
-     * City name se location details fetch karo
-     *
-     * @param cityName - City ka naam (e.g., "Dubai")
-     * @return GeoLocation with lat, lon, country
-     */
     public GeoLocation getCoordinates(String cityName) {
         try {
             log.info("Fetching coordinates for city: {}", cityName);
@@ -63,9 +51,6 @@ public class GeocodingService {
         }
     }
 
-    /**
-     * Location result
-     */
     @Data
     public static class GeoLocation {
         private final Double latitude;
@@ -74,9 +59,6 @@ public class GeocodingService {
         private final String displayName;
     }
 
-    /**
-     * API Response mapping
-     */
     @Data
     public static class GeocodingResponse {
         private List<GeocodingResult> results;
@@ -89,6 +71,6 @@ public class GeocodingService {
         private Double longitude;
         private String country;
         private String timezone;
-        private String admin1;  // State/Province
+        private String admin1;
     }
 }

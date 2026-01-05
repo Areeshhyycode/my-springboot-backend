@@ -8,14 +8,17 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
 
-/**
- * USER PROFILE REQUEST DTO
- * Frontend se profile data receive karne ke liye
- */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 public class UserProfileRequest {
+
+    @NotBlank(message = "Username is required")
+    @Size(min = 3, max = 50, message = "Username must be between 3 and 50 characters")
+    private String username;
+
+    @Size(max = 100, message = "Full name cannot exceed 100 characters")
+    private String fullName;
 
     @Pattern(regexp = "^\\+?[1-9]\\d{1,14}$", message = "Invalid phone number format")
     private String phoneNumber;
@@ -24,16 +27,16 @@ public class UserProfileRequest {
     @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate dateOfBirth;
 
-    @Size(max = 200, message = "Address too long")
-    private String address;
+    private String gender;
 
-    @Size(max = 500, message = "Profile photo URL too long")
-    private String profilePhotoUrl;
+    @Size(max = 100, message = "Country name too long")
+    private String country;
 
-    @Size(min = 2, max = 5, message = "Language code must be 2-5 characters")
-    private String language;
+    @Size(max = 100, message = "City name too long")
+    private String city;
 
-    @Size(max = 500, message = "Bio must not exceed 500 characters")
+    @Size(max = 500, message = "Bio cannot exceed 500 characters")
     private String bio;
-}
 
+    private java.util.List<String> preferredTravelTypes;
+}

@@ -9,9 +9,6 @@ import lombok.NoArgsConstructor;
 import java.math.BigDecimal;
 import java.util.List;
 
-/**
- * SEARCH RESPONSE - Search results with weather
- */
 @Data
 @Builder
 @NoArgsConstructor
@@ -27,20 +24,18 @@ public class SearchResponse {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class SearchResult {
-        private String type;           // "COUNTRY" or "CITY"
+        private String type;
         private String id;
         private String name;
         private String description;
         private String imageUrl;
 
-        // For City
         private String countryId;
         private String countryName;
         private Double latitude;
         private Double longitude;
         private City.CityWeather weather;
 
-        // Activities (for city)
         private List<ActivityInfo> activities;
     }
 
@@ -55,5 +50,7 @@ public class SearchResponse {
         private BigDecimal pricePerHour;
         private BigDecimal pricePerDay;
         private String imageUrl;
+        private Double latitude;
+        private Double longitude;
     }
 }

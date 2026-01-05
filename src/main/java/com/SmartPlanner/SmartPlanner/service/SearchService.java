@@ -14,9 +14,6 @@ import org.springframework.stereotype.Service;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * SEARCH SERVICE - Search countries, cities with weather
- */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -27,15 +24,11 @@ public class SearchService {
     private final CategoryRepository categoryRepository;
     private final WeatherService weatherService;
 
-    /**
-     * Search by query - searches both countries and cities
-     */
     public SearchResponse search(String query) {
         log.info("Searching for: {}", query);
 
         List<SearchResponse.SearchResult> results = new ArrayList<>();
 
-        // Search countries
         List<Country> countries = countryRepository.findByNameContainingIgnoreCaseAndIsActiveTrue(query);
         for (Country country : countries) {
             results.add(SearchResponse.SearchResult.builder()
@@ -47,10 +40,8 @@ public class SearchService {
                     .build());
         }
 
-        // Search cities
         List<City> cities = cityRepository.findByNameContainingIgnoreCaseAndIsActiveTrue(query);
         for (City city : cities) {
-            // Get activities for this city
             List<Category> activities = categoryRepository.findByCityIdAndIsActiveTrue(city.getId());
             List<SearchResponse.ActivityInfo> activityList = new ArrayList<>();
 
@@ -62,6 +53,8 @@ public class SearchService {
                         .pricePerHour(activity.getPricePerHour())
                         .pricePerDay(activity.getPricePerDay())
                         .imageUrl(activity.getImageUrl())
+                        .latitude(activity.getLatitude())
+                        .longitude(activity.getLongitude())
                         .build());
             }
 
@@ -87,9 +80,6 @@ public class SearchService {
                 .build();
     }
 
-    /**
-     * Search cities only - with fresh weather
-     */
     public SearchResponse searchCities(String query) {
         log.info("Searching cities for: {}", query);
 
@@ -97,7 +87,6 @@ public class SearchService {
         List<City> cities = cityRepository.findByNameContainingIgnoreCaseAndIsActiveTrue(query);
 
         for (City city : cities) {
-            // Get activities
             List<Category> activities = categoryRepository.findByCityIdAndIsActiveTrue(city.getId());
             List<SearchResponse.ActivityInfo> activityList = new ArrayList<>();
 
@@ -109,6 +98,8 @@ public class SearchService {
                         .pricePerHour(activity.getPricePerHour())
                         .pricePerDay(activity.getPricePerDay())
                         .imageUrl(activity.getImageUrl())
+                        .latitude(activity.getLatitude())
+                        .longitude(activity.getLongitude())
                         .build());
             }
 
@@ -134,20 +125,15 @@ public class SearchService {
                 .build();
     }
 
-    /**
-     * Get city by name with fresh weather
-     */
     public SearchResponse.SearchResult getCityWithWeather(String cityName) {
         City city = cityRepository.findByNameIgnoreCase(cityName)
                 .orElseThrow(() -> new RuntimeException("City not found: " + cityName));
 
-        // Fetch fresh weather
         City.CityWeather freshWeather = weatherService.fetchCityWeather(
                 city.getLatitude(),
                 city.getLongitude()
         );
 
-        // Get activities
         List<Category> activities = categoryRepository.findByCityIdAndIsActiveTrue(city.getId());
         List<SearchResponse.ActivityInfo> activityList = new ArrayList<>();
 
@@ -159,6 +145,8 @@ public class SearchService {
                     .pricePerHour(activity.getPricePerHour())
                     .pricePerDay(activity.getPricePerDay())
                     .imageUrl(activity.getImageUrl())
+                    .latitude(activity.getLatitude())
+                    .longitude(activity.getLongitude())
                     .build());
         }
 

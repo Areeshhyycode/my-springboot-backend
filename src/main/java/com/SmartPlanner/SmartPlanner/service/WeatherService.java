@@ -12,9 +12,6 @@ import org.springframework.web.client.RestTemplate;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * WEATHER SERVICE - Open-Meteo API se weather data fetch karta hai
- */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -23,15 +20,12 @@ public class WeatherService {
     private final CityRepository cityRepository;
     private final RestTemplate restTemplate;
 
-    // Open-Meteo API base URL (with humidity for storing)
     private static final String WEATHER_API_URL =
             "https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}" +
                     "&current=temperature_2m,wind_speed_10m,relative_humidity_2m,weather_code" +
-                    "&hourly=temperature_2m,relative_humidity_2m,wind_speed_10m";
+                    "&hourly=temperature_2m,relative_humidity_2m,wind_speed_10m" +
+                    "&timezone=auto";
 
-    /**
-     * City ID se weather fetch karo
-     */
     public WeatherResponse getWeatherByCityId(String cityId) {
         City city = cityRepository.findById(cityId)
                 .orElseThrow(() -> new RuntimeException("City not found with id: " + cityId));
@@ -39,9 +33,6 @@ public class WeatherService {
         return fetchWeatherForCity(city);
     }
 
-    /**
-     * City name se weather fetch karo
-     */
     public WeatherResponse getWeatherByCityName(String cityName) {
         City city = cityRepository.findByNameIgnoreCase(cityName)
                 .orElseThrow(() -> new RuntimeException("City not found: " + cityName));
@@ -49,16 +40,10 @@ public class WeatherService {
         return fetchWeatherForCity(city);
     }
 
-    /**
-     * Latitude/Longitude se direct weather fetch karo
-     */
     public WeatherResponse getWeatherByCoordinates(Double lat, Double lon, String cityName) {
         return fetchWeather(lat, lon, cityName, "");
     }
 
-    /**
-     * Open-Meteo API call karo aur response map karo
-     */
     private WeatherResponse fetchWeatherForCity(City city) {
         return fetchWeather(city.getLatitude(), city.getLongitude(), city.getName(), city.getCountryName());
     }
@@ -67,18 +52,16 @@ public class WeatherService {
         try {
             log.info("Fetching weather for {} ({}, {})", cityName, lat, lon);
 
-            // API call
             OpenMeteoResponse apiResponse = restTemplate.getForObject(
                     WEATHER_API_URL,
                     OpenMeteoResponse.class,
                     lat, lon
             );
 
-            if (apiResponse == null) {
+            if (apiResponse == null || apiResponse.getCurrent() == null) {
                 throw new RuntimeException("Failed to fetch weather data");
             }
 
-            // Response build karo
             return buildWeatherResponse(apiResponse, cityName, country);
 
         } catch (Exception e) {
@@ -87,31 +70,33 @@ public class WeatherService {
         }
     }
 
-    /**
-     * API response ko clean WeatherResponse mein convert karo
-     */
     private WeatherResponse buildWeatherResponse(OpenMeteoResponse api, String cityName, String country) {
-        // Current weather
         WeatherResponse.CurrentWeather current = WeatherResponse.CurrentWeather.builder()
                 .time(api.getCurrent().getTime())
-                .temperature(api.getCurrent().getTemperature())
-                .windSpeed(api.getCurrent().getWindSpeed())
-                .temperatureUnit("°C")
-                .windSpeedUnit("km/h")
+                .temperature(api.getCurrent().getTemperature2m())
+                .windSpeed(api.getCurrent().getWindSpeed10m())
+                .temperatureUnit(api.getCurrentUnits() != null ? api.getCurrentUnits().getTemperature2m() : "°C")
+                .windSpeedUnit(api.getCurrentUnits() != null ? api.getCurrentUnits().getWindSpeed10m() : "km/h")
                 .build();
 
-        // Hourly weather (next 24 hours)
         List<WeatherResponse.HourlyWeather> hourlyList = new ArrayList<>();
-        int hoursToShow = Math.min(24, api.getHourly().getTime().size());
 
-        for (int i = 0; i < hoursToShow; i++) {
-            WeatherResponse.HourlyWeather hourly = WeatherResponse.HourlyWeather.builder()
-                    .time(api.getHourly().getTime().get(i))
-                    .temperature(api.getHourly().getTemperature().get(i))
-                    .humidity(api.getHourly().getHumidity().get(i))
-                    .windSpeed(api.getHourly().getWindSpeed().get(i))
-                    .build();
-            hourlyList.add(hourly);
+        if (api.getHourly() != null &&
+                api.getHourly().getTime() != null &&
+                api.getHourly().getTemperature2m() != null) {
+
+            int hoursToShow = Math.min(24, api.getHourly().getTime().size());
+
+            for (int i = 0; i < hoursToShow; i++) {
+                WeatherResponse.HourlyWeather hourly = WeatherResponse.HourlyWeather.builder()
+                        .time(api.getHourly().getTime().get(i))
+                        .temperature(api.getHourly().getTemperature2m().get(i))
+                        .humidity(api.getHourly().getRelativeHumidity2m() != null ?
+                                api.getHourly().getRelativeHumidity2m().get(i) : null)
+                        .windSpeed(api.getHourly().getWindSpeed10m().get(i))
+                        .build();
+                hourlyList.add(hourly);
+            }
         }
 
         return WeatherResponse.builder()
@@ -122,10 +107,6 @@ public class WeatherService {
                 .build();
     }
 
-    /**
-     * Fetch CityWeather object for storing in City model
-     * Called when admin adds a new city
-     */
     public City.CityWeather fetchCityWeather(Double lat, Double lon) {
         try {
             log.info("Fetching weather for coordinates ({}, {})", lat, lon);
@@ -140,20 +121,18 @@ public class WeatherService {
                 throw new RuntimeException("Failed to fetch weather data");
             }
 
-            // Get humidity from first hourly entry if current doesn't have it
-            Integer humidity = null;
-            if (apiResponse.getHourly() != null &&
-                apiResponse.getHourly().getHumidity() != null &&
-                !apiResponse.getHourly().getHumidity().isEmpty()) {
-                humidity = apiResponse.getHourly().getHumidity().get(0);
+            Integer humidity = apiResponse.getCurrent().getRelativeHumidity2m();
+            if (humidity == null && apiResponse.getHourly() != null &&
+                    apiResponse.getHourly().getRelativeHumidity2m() != null &&
+                    !apiResponse.getHourly().getRelativeHumidity2m().isEmpty()) {
+                humidity = apiResponse.getHourly().getRelativeHumidity2m().get(0);
             }
 
-            // Map weather code to description
             String weatherDescription = getWeatherDescription(apiResponse.getCurrent().getWeatherCode());
 
             return new City.CityWeather(
-                    apiResponse.getCurrent().getTemperature(),
-                    apiResponse.getCurrent().getWindSpeed(),
+                    apiResponse.getCurrent().getTemperature2m(),
+                    apiResponse.getCurrent().getWindSpeed10m(),
                     humidity,
                     String.valueOf(apiResponse.getCurrent().getWeatherCode()),
                     weatherDescription
@@ -161,15 +140,10 @@ public class WeatherService {
 
         } catch (Exception e) {
             log.error("Error fetching weather: {}", e.getMessage());
-            // Return null weather instead of failing
             return null;
         }
     }
 
-    /**
-     * Weather code ko human readable description mein convert karo
-     * Based on WMO Weather interpretation codes
-     */
     private String getWeatherDescription(Integer code) {
         if (code == null) return "Unknown";
 

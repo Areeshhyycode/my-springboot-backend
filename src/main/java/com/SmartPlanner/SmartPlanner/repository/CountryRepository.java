@@ -7,9 +7,6 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 import java.util.Optional;
 
-/**
- * COUNTRY REPOSITORY - Database operations for countries
- */
 @Repository
 public interface CountryRepository extends MongoRepository<Country, String> {
 
@@ -23,6 +20,5 @@ public interface CountryRepository extends MongoRepository<Country, String> {
 
     List<Country> findByIsActiveTrue();
 
-    // Search by name (partial match, case insensitive)
     List<Country> findByNameContainingIgnoreCaseAndIsActiveTrue(String name);
 }

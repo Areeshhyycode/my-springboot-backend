@@ -8,11 +8,8 @@ import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 
-/**
- * USER PROFILE MODEL - Extended user information
- * User ke detailed profile information ko store karta hai
- */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -22,27 +19,26 @@ public class UserProfile {
     @Id
     private String id;
 
-    private String userId;  // User collection se link (foreign key)
-
-    // Basic Information
+    private String userId;
+    private String username;
+    private String email;
+    private String fullName;
     private String phoneNumber;
     private LocalDate dateOfBirth;
-
-    // Location Information
-    private String address;
-
-    // Profile Details
+    private String gender;
+    private String country;
+    private String city;
     private String profilePhotoUrl;
-    private String language;         // Preferred language (e.g., "en", "ur", "es")
-    private String bio;              // About me/Bio section
+    private String bio;
+    private List<String> preferredTravelTypes;
 
-    // Timestamps
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
-    // Constructor with userId for initialization
-    public UserProfile(String userId) {
+    public UserProfile(String userId, String username, String email) {
         this.userId = userId;
+        this.username = username;
+        this.email = email;
         this.createdAt = LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();
     }

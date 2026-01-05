@@ -7,9 +7,6 @@ import lombok.NoArgsConstructor;
 
 import java.util.List;
 
-/**
- * WEATHER RESPONSE DTO - Frontend ko bhejne ke liye clean response
- */
 @Data
 @Builder
 @NoArgsConstructor
@@ -27,10 +24,10 @@ public class WeatherResponse {
     @AllArgsConstructor
     public static class CurrentWeather {
         private String time;
-        private Double temperature;      // °C
-        private Double windSpeed;        // km/h
-        private String temperatureUnit;  // "°C"
-        private String windSpeedUnit;    // "km/h"
+        private Double temperature;
+        private Double windSpeed;
+        private String temperatureUnit;
+        private String windSpeedUnit;
     }
 
     @Data

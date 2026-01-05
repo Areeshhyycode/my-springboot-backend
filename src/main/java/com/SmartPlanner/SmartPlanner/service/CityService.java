@@ -12,18 +12,6 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.util.List;
 
-/**
- * CITY SERVICE - Cities under Countries
- *
- * Hierarchy:
- * Country (UAE)
- *   └── City (Dubai) ← Managed here
- *         └── Activity (Beach, Safari)
- *
- * Auto-fetch features:
- * - Latitude/Longitude from Geocoding API
- * - Weather from Open-Meteo API
- */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -34,72 +22,44 @@ public class CityService {
     private final GeocodingService geocodingService;
     private final WeatherService weatherService;
 
-    /**
-     * Get all cities
-     */
     public List<City> getAllCities() {
         return cityRepository.findAll();
     }
 
-    /**
-     * Get cities by country ID
-     */
     public List<City> getCitiesByCountry(String countryId) {
-        // Verify country exists
         if (!countryRepository.existsById(countryId)) {
             throw new RuntimeException("Country not found: " + countryId);
         }
         return cityRepository.findByCountryIdAndIsActiveTrue(countryId);
     }
 
-    /**
-     * Get city by ID
-     */
     public City getCityById(String id) {
         return cityRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("City not found with id: " + id));
     }
 
-    /**
-     * Get city by name
-     */
     public City getCityByName(String name) {
         return cityRepository.findByNameIgnoreCase(name)
                 .orElseThrow(() -> new RuntimeException("City not found: " + name));
     }
 
-    /**
-     * ADD NEW CITY under a Country
-     *
-     * Flow:
-     * 1. Admin sends: { "countryId": "xxx", "name": "Dubai" }
-     * 2. Verify country exists
-     * 3. Fetch lat/lon from Geocoding API
-     * 4. Fetch weather from Open-Meteo API
-     * 5. Save city with country reference
-     */
     public City addCity(CityRequest request) {
-        // Step 1: Verify country exists
         Country country = countryRepository.findById(request.getCountryId())
                 .orElseThrow(() -> new RuntimeException("Country not found: " + request.getCountryId()));
 
-        // Step 2: Check if city already exists in this country
         if (cityRepository.existsByNameIgnoreCaseAndCountryId(request.getName(), request.getCountryId())) {
             throw new RuntimeException("City already exists in " + country.getName() + ": " + request.getName());
         }
 
         log.info("Adding city {} to country {}", request.getName(), country.getName());
 
-        // Step 3: Fetch coordinates from Geocoding API
         GeocodingService.GeoLocation location = geocodingService.getCoordinates(request.getName());
 
-        // Step 4: Fetch weather from Open-Meteo API
         City.CityWeather weather = weatherService.fetchCityWeather(
                 location.getLatitude(),
                 location.getLongitude()
         );
 
-        // Step 5: Create and save city
         City city = new City();
         city.setCountryId(country.getId());
         city.setCountryName(country.getName());
@@ -122,13 +82,9 @@ public class CityService {
         return savedCity;
     }
 
-    /**
-     * Update city
-     */
     public City updateCity(String id, CityRequest request) {
         City city = getCityById(id);
 
-        // Verify new country if changed
         if (!city.getCountryId().equals(request.getCountryId())) {
             Country newCountry = countryRepository.findById(request.getCountryId())
                     .orElseThrow(() -> new RuntimeException("Country not found: " + request.getCountryId()));
@@ -136,7 +92,6 @@ public class CityService {
             city.setCountryName(newCountry.getName());
         }
 
-        // Check if name changed - need to re-fetch coordinates
         boolean nameChanged = !city.getName().equalsIgnoreCase(request.getName());
 
         if (nameChanged) {
@@ -160,9 +115,6 @@ public class CityService {
         return cityRepository.save(city);
     }
 
-    /**
-     * Refresh weather for a city
-     */
     public City refreshWeather(String cityId) {
         City city = getCityById(cityId);
 
@@ -177,9 +129,6 @@ public class CityService {
         return cityRepository.save(city);
     }
 
-    /**
-     * Refresh weather for all cities
-     */
     public List<City> refreshAllWeather() {
         List<City> cities = cityRepository.findAll();
 
@@ -200,9 +149,6 @@ public class CityService {
         return cityRepository.findAll();
     }
 
-    /**
-     * Toggle city active status
-     */
     public City toggleCityStatus(String id) {
         City city = getCityById(id);
         city.setIsActive(!city.getIsActive());
@@ -210,9 +156,6 @@ public class CityService {
         return cityRepository.save(city);
     }
 
-    /**
-     * Delete city
-     */
     public void deleteCity(String id) {
         if (!cityRepository.existsById(id)) {
             throw new RuntimeException("City not found with id: " + id);
@@ -220,14 +163,10 @@ public class CityService {
         cityRepository.deleteById(id);
     }
 
-    /**
-     * Seed sample cities for a country
-     */
     public List<City> addSampleCities(String countryId) {
         Country country = countryRepository.findById(countryId)
                 .orElseThrow(() -> new RuntimeException("Country not found: " + countryId));
 
-        // Sample cities based on country
         String[] sampleCities;
         switch (country.getCode()) {
             case "UAE" -> sampleCities = new String[]{"Dubai", "Abu Dhabi", "Sharjah"};

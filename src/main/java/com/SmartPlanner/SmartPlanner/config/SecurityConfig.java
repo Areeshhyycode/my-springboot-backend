@@ -12,15 +12,11 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
-/**
- * SECURITY CONFIGURATION
- *
- * Role-based access control:
- * - PUBLIC: Auth APIs, GET cities/categories/weather
- * - ADMIN: POST/PUT/DELETE cities/categories (under /api/v1/admin/*)
- * - USER: Trip planning APIs
- */
+import java.util.Arrays;
 @Configuration
 @EnableWebSecurity
 @RequiredArgsConstructor
@@ -31,44 +27,64 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-            // CSRF disable (REST API ke liye)
-            .csrf(csrf -> csrf.disable())
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                .csrf(csrf -> csrf.disable())
+                .sessionManagement(session ->
+                        session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                )
+                .authorizeHttpRequests(auth -> auth
 
-            // Session management - Stateless (JWT use kar rahe hain)
-            .sessionManagement(session ->
-                session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-            )
+                        // ✅ PUBLIC
+                        .requestMatchers("/api/v1/auth/**").permitAll()
+                        .requestMatchers("/api/auth/**").permitAll()
+                        .requestMatchers("/error").permitAll()
+                        .requestMatchers("/uploads/**").permitAll()
+                        .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll()
 
-            // URL permissions
-            .authorizeHttpRequests(auth -> auth
-                // ==================== PUBLIC URLs ====================
-                // Auth APIs - Login/Register
-                .requestMatchers("/api/v1/auth/**").permitAll()
+                        // Weather APIs
+                        .requestMatchers("/api/weather/**").permitAll()
+                        .requestMatchers("/api/v1/weather/**").permitAll()
 
-                // GET requests - Countries, Cities, Categories, Weather (public read)
-                .requestMatchers(HttpMethod.GET, "/api/v1/countries/**").permitAll()
-                .requestMatchers(HttpMethod.GET, "/api/v1/cities/**").permitAll()
-                .requestMatchers(HttpMethod.GET, "/api/v1/categories/**").permitAll()
-                .requestMatchers(HttpMethod.GET, "/api/v1/weather/**").permitAll()
+                        // Maps APIs
+                        .requestMatchers("/api/v1/maps/**").permitAll()
 
-                // Error page
-                .requestMatchers("/error").permitAll()
+                        // Public GET APIs
+                        .requestMatchers(HttpMethod.GET, "/api/v1/countries/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/cities/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/categories/**").permitAll()
 
-                // ==================== ADMIN ONLY URLs ====================
-                // Admin APIs - Countries, Cities & Categories CRUD
-                .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
+                        // ✅ COUNTDOWN & NOTIFICATION APIs (ADD THESE)
+                        .requestMatchers("/api/v1/countdown/**").authenticated()
+                        .requestMatchers("/api/v1/notifications/**").authenticated()
 
-                // ==================== AUTHENTICATED (USER + ADMIN) ====================
-                // Trip APIs - logged in users only
-                .requestMatchers("/api/v1/trips/**").authenticated()
-                .requestMatchers("/api/v1/user/**").authenticated()
+                        // Trip status update endpoints
+                        .requestMatchers(HttpMethod.PUT, "/api/v1/trips/*/start").authenticated()
+                        .requestMatchers(HttpMethod.PUT, "/api/v1/trips/*/complete").authenticated()
+                        .requestMatchers(HttpMethod.PUT, "/api/v1/trips/*/cancel").authenticated()
+                        .requestMatchers(HttpMethod.PUT, "/api/v1/trips/*/update-status").authenticated()
+                        .requestMatchers(HttpMethod.PUT, "/api/v1/trips/*/status").authenticated()
 
-                // Baaki saari URLs ke liye authentication chahiye
-                .anyRequest().authenticated()
-            )
+                        // ✅ ADMIN
+                        .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
+                        .requestMatchers("/api/v1/trips/admin/**").hasRole("ADMIN")
+                        .requestMatchers("/api/v1/admin/trigger-reminders").hasRole("ADMIN")
 
-            // JWT Filter add karo (UsernamePasswordAuthenticationFilter se pehle)
-            .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+                        // ✅ TRIPS (ALL METHODS EXPLICIT)
+                        .requestMatchers(HttpMethod.GET, "/api/v1/trips/**").authenticated()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/trips/**").authenticated()
+                        .requestMatchers(HttpMethod.PUT, "/api/v1/trips/**").authenticated()
+                        .requestMatchers(HttpMethod.PATCH, "/api/v1/trips/**").authenticated()
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/trips/**").authenticated()
+
+                        // ✅ USER
+                        .requestMatchers("/api/v1/user/**").authenticated()
+                        .requestMatchers("/api/v1/profile/**").authenticated()
+
+                        // ✅ FALLBACK
+                        .anyRequest().authenticated()
+                )
+
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
@@ -76,5 +92,43 @@ public class SecurityConfig {
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
+    }
+
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration configuration = new CorsConfiguration();
+
+        configuration.setAllowedOrigins(Arrays.asList(
+                "http://localhost:5173",
+                "http://localhost:5174",
+                "http://localhost:3000",
+                "http://127.0.0.1:5173",
+                "http://127.0.0.1:3000",
+                "http://localhost:8080",
+                "http://127.0.0.1:8080"
+        ));
+
+        configuration.setAllowedMethods(Arrays.asList(
+                "GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH", "HEAD"
+        ));
+
+        configuration.setAllowedHeaders(Arrays.asList(
+                "Authorization", "Content-Type", "Accept", "X-Requested-With",
+                "Cache-Control", "Origin", "Access-Control-Request-Method",
+                "Access-Control-Request-Headers"
+        ));
+
+        configuration.setExposedHeaders(Arrays.asList(
+                "Authorization", "Content-Type", "Content-Disposition",
+                "Access-Control-Allow-Origin", "Access-Control-Allow-Credentials"
+        ));
+
+        configuration.setAllowCredentials(true);
+        configuration.setMaxAge(3600L);
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", configuration);
+
+        return source;
     }
 }

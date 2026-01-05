@@ -14,22 +14,14 @@ import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.Optional;
 
-/**
- * USER PROFILE SERVICE
- * Business logic for user profile operations
- */
 @Service
 @RequiredArgsConstructor
 public class UserProfileService {
 
     private final UserProfileRepository profileRepository;
     private final UserRepository userRepository;
-    private final FileStorageService fileStorageService; // File upload
+    private final FileStorageService fileStorageService;
 
-    /**
-     * Create or Get User Profile
-     * @param email - User email from JWT token
-     */
     @Transactional
     public UserProfileResponse getOrCreateProfile(String email) {
         User user = userRepository.findByEmail(email)
@@ -37,87 +29,109 @@ public class UserProfileService {
 
         UserProfile profile = profileRepository.findByUserId(user.getId())
                 .orElseGet(() -> {
-                    UserProfile newProfile = new UserProfile(user.getId());
+                    UserProfile newProfile = new UserProfile(user.getId(), user.getUsername(), user.getEmail());
+                    newProfile.setFullName(user.getFullName());
                     return profileRepository.save(newProfile);
                 });
+
+        // Sync user data if changed
+        if (!user.getUsername().equals(profile.getUsername()) ||
+                !user.getEmail().equals(profile.getEmail()) ||
+                (user.getFullName() != null && !user.getFullName().equals(profile.getFullName()))) {
+
+            profile.setUsername(user.getUsername());
+            profile.setEmail(user.getEmail());
+            profile.setFullName(user.getFullName());
+            profile.setUpdatedAt(LocalDateTime.now());
+            profileRepository.save(profile);
+        }
 
         return mapToResponse(profile, user);
     }
 
-    /**
-     * Update User Profile
-     * @param email - User email from JWT token
-     */
     @Transactional
     public UserProfileResponse updateProfile(String email, UserProfileRequest request) {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         UserProfile profile = profileRepository.findByUserId(user.getId())
-                .orElse(new UserProfile(user.getId()));
+                .orElse(new UserProfile(user.getId(), user.getUsername(), user.getEmail()));
+
+        // Update User entity if username changed
+        boolean userUpdated = false;
+        if (request.getUsername() != null && !request.getUsername().equals(user.getUsername())) {
+            if (userRepository.existsByUsername(request.getUsername())) {
+                throw new RuntimeException("Username already taken");
+            }
+            user.setUsername(request.getUsername());
+            userUpdated = true;
+        }
+
+        // Note: Email update should be separate endpoint for security
+        if (userUpdated) {
+            user.setUpdatedAt(LocalDateTime.now());
+            userRepository.save(user);
+        }
 
         // Update profile fields
-        if (request.getPhoneNumber() != null) {
-            profile.setPhoneNumber(request.getPhoneNumber());
-        }
-        if (request.getDateOfBirth() != null) {
-            profile.setDateOfBirth(request.getDateOfBirth());
-        }
-        if (request.getAddress() != null) {
-            profile.setAddress(request.getAddress());
-        }
-        if (request.getProfilePhotoUrl() != null) {
-            profile.setProfilePhotoUrl(request.getProfilePhotoUrl());
-        }
-        if (request.getLanguage() != null) {
-            profile.setLanguage(request.getLanguage());
-        }
-        if (request.getBio() != null) {
-            profile.setBio(request.getBio());
-        }
-
+        profile.setUsername(user.getUsername());
+        profile.setFullName(request.getFullName());
+        profile.setPhoneNumber(request.getPhoneNumber());
+        profile.setDateOfBirth(request.getDateOfBirth());
+        profile.setGender(request.getGender());
+        profile.setCountry(request.getCountry());
+        profile.setCity(request.getCity());
+        profile.setBio(request.getBio());
+        profile.setPreferredTravelTypes(request.getPreferredTravelTypes());
         profile.setUpdatedAt(LocalDateTime.now());
+
         UserProfile savedProfile = profileRepository.save(profile);
 
         return mapToResponse(savedProfile, user);
     }
 
-    /**
-     * Update Username (from User model)
-     * @param email - User email from JWT token
-     */
     @Transactional
     public UserProfileResponse updateUsername(String email, UsernameUpdateRequest request) {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        // Check if username already exists
+        // Check if username is already taken by another user
         Optional<User> existingUser = userRepository.findByUsername(request.getUsername());
         if (existingUser.isPresent() && !existingUser.get().getId().equals(user.getId())) {
             throw new RuntimeException("Username already taken");
         }
 
+        // Update User entity
         user.setUsername(request.getUsername());
         user.setUpdatedAt(LocalDateTime.now());
         userRepository.save(user);
 
+        // Update Profile entity
         UserProfile profile = profileRepository.findByUserId(user.getId())
-                .orElse(new UserProfile(user.getId()));
+                .orElseGet(() -> {
+                    UserProfile newProfile = new UserProfile(user.getId(), request.getUsername(), user.getEmail());
+                    newProfile.setFullName(user.getFullName());
+                    return newProfile;
+                });
+
+        profile.setUsername(request.getUsername());
+        profile.setUpdatedAt(LocalDateTime.now());
+        profileRepository.save(profile);
 
         return mapToResponse(profile, user);
     }
 
-    /**
-     * Update Phone Number
-     * @param email - User email from JWT token
-     */
     @Transactional
     public UserProfileResponse updatePhoneNumber(String email, PhoneUpdateRequest request) {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         UserProfile profile = profileRepository.findByUserId(user.getId())
-                .orElse(new UserProfile(user.getId()));
+                .orElseGet(() -> {
+                    UserProfile newProfile = new UserProfile(user.getId(), user.getUsername(), user.getEmail());
+                    newProfile.setFullName(user.getFullName());
+                    return newProfile;
+                });
 
         profile.setPhoneNumber(request.getPhoneNumber());
         profile.setUpdatedAt(LocalDateTime.now());
@@ -126,17 +140,17 @@ public class UserProfileService {
         return mapToResponse(savedProfile, user);
     }
 
-    /**
-     * Upload Profile Photo
-     * @param email - User email from JWT token
-     */
     @Transactional
     public UserProfileResponse uploadProfilePhoto(String email, MultipartFile file) throws IOException {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         UserProfile profile = profileRepository.findByUserId(user.getId())
-                .orElse(new UserProfile(user.getId()));
+                .orElseGet(() -> {
+                    UserProfile newProfile = new UserProfile(user.getId(), user.getUsername(), user.getEmail());
+                    newProfile.setFullName(user.getFullName());
+                    return newProfile;
+                });
 
         // Delete old photo if exists
         if (profile.getProfilePhotoUrl() != null) {
@@ -152,10 +166,6 @@ public class UserProfileService {
         return mapToResponse(savedProfile, user);
     }
 
-    /**
-     * Delete Profile Photo
-     * @param email - User email from JWT token
-     */
     @Transactional
     public UserProfileResponse deleteProfilePhoto(String email) {
         User user = userRepository.findByEmail(email)
@@ -174,22 +184,24 @@ public class UserProfileService {
         return mapToResponse(profile, user);
     }
 
-    /**
-     * Map to Response DTO
-     */
     private UserProfileResponse mapToResponse(UserProfile profile, User user) {
         UserProfileResponse response = new UserProfileResponse();
         response.setId(profile.getId());
         response.setUserId(profile.getUserId());
-        response.setUsername(user.getUsername());
-        response.setEmail(user.getEmail());
-        response.setRole(user.getRole().name());  // Account Type: USER or ADMIN
+        response.setUsername(profile.getUsername());
+        response.setEmail(profile.getEmail());
+        response.setFullName(profile.getFullName());
         response.setPhoneNumber(profile.getPhoneNumber());
         response.setDateOfBirth(profile.getDateOfBirth());
-        response.setAddress(profile.getAddress());
+        response.setGender(profile.getGender());
+        response.setCountry(profile.getCountry());
+        response.setCity(profile.getCity());
         response.setProfilePhotoUrl(profile.getProfilePhotoUrl());
-        response.setLanguage(profile.getLanguage());
         response.setBio(profile.getBio());
+        response.setPreferredTravelTypes(profile.getPreferredTravelTypes());
+        response.setCreatedAt(profile.getCreatedAt());
+        response.setUpdatedAt(profile.getUpdatedAt());
+
         return response;
     }
 }

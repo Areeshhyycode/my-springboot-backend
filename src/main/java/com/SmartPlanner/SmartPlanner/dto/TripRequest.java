@@ -11,16 +11,6 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDate;
 import java.util.List;
 
-/**
- * TRIP REQUEST DTO - User trip plan request
- *
- * User select karega:
- * - City
- * - Duration
- * - Activities
- *
- * Backend calculate karega total cost
- */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -39,9 +29,6 @@ public class TripRequest {
     @NotEmpty(message = "At least one activity must be selected")
     private List<ActivitySelection> selectedActivities;
 
-    /**
-     * Activity Selection - User ne jo activities select ki
-     */
     @Data
     @NoArgsConstructor
     @AllArgsConstructor
@@ -50,19 +37,16 @@ public class TripRequest {
         private String activityId;
 
         @NotNull(message = "Duration type is required")
-        private DurationType durationType;  // HOURS or DAYS
+        private DurationType durationType;
 
         @NotNull(message = "Duration value is required")
         @Positive(message = "Duration value must be positive")
-        private Integer durationValue;  // e.g., 3 hours or 2 days
+        private Integer durationValue;
 
         @Positive(message = "Quantity must be positive")
-        private Integer quantity = 1;  // How many times (default 1)
+        private Integer quantity = 1;
     }
 
-    /**
-     * Duration Type - Hours ya Days
-     */
     public enum DurationType {
         HOURS,
         DAYS

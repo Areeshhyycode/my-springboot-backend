@@ -14,34 +14,11 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/v1/auth")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "*")  // React frontend se requests allow
+@CrossOrigin(origins = "*")
 public class AuthController {
 
     private final AuthService authService;
 
-    /**
-     * REGISTER API
-     *
-     * URL: POST http://localhost:8080/api/v1/auth/register
-     *
-     * Request Body (JSON):
-     * {
-     *   "username": "john",
-     *   "email": "john@example.com",
-     *   "password": "password123"
-     * }
-     *
-     * Response:
-     * {
-     *   "token": "eyJhbGc...",
-     *   "message": "Registration successful!",
-     *   "username": "john",
-     *   "email": "john@example.com"
-     * }
-     *
-     * @Valid - Request body ko validate karo (DTO mein jo annotations hain)
-     * @RequestBody - JSON ko Java object mein convert karo
-     */
     @PostMapping("/register")
     public ResponseEntity<?> register(@Valid @RequestBody RegisterRequest request) {
         try {
@@ -52,25 +29,7 @@ public class AuthController {
         }
     }
 
-    /**
-     * LOGIN API
-     *
-     * URL: POST http://localhost:8080/api/v1/auth/login
-     *
-     * Request Body (JSON):
-     * {
-     *   "email": "john@example.com",
-     *   "password": "password123"
-     * }
-     *
-     * Response:
-     * {
-     *   "token": "eyJhbGc...",
-     *   "message": "Login successful!",
-     *   "username": "john",
-     *   "email": "john@example.com"
-     * }
-     */
+
     @PostMapping("/login")
     public ResponseEntity<?> login(@Valid @RequestBody LoginRequest request) {
         try {
@@ -81,30 +40,7 @@ public class AuthController {
         }
     }
 
-    /**
-     * REGISTER ADMIN API (Protected - only existing admin can create new admin)
-     *
-     * URL: POST http://localhost:8080/api/v1/auth/register-admin
-     *
-     * Headers:
-     *   Authorization: Bearer <admin_token>
-     *
-     * Request Body (JSON):
-     * {
-     *   "username": "admin2",
-     *   "email": "admin2@example.com",
-     *   "password": "admin123"
-     * }
-     *
-     * Response:
-     * {
-     *   "token": "eyJhbGc...",
-     *   "message": "Admin registration successful!",
-     *   "username": "admin2",
-     *   "email": "admin2@example.com",
-     *   "role": "ADMIN"
-     * }
-     */
+
     @PostMapping("/register-admin")
     public ResponseEntity<?> registerAdmin(@Valid @RequestBody RegisterRequest request) {
         try {
@@ -115,13 +51,6 @@ public class AuthController {
         }
     }
 
-    /**
-     * CREATE FIRST ADMIN (Use only once to create first admin)
-     *
-     * URL: POST http://localhost:8080/api/v1/auth/setup-admin
-     *
-     * Note: Production mein yeh endpoint disable kar dena
-     */
     @PostMapping("/setup-admin")
     public ResponseEntity<?> setupFirstAdmin(@Valid @RequestBody RegisterRequest request) {
         try {
@@ -132,16 +61,10 @@ public class AuthController {
         }
     }
 
-    /**
-     * TEST API - Check if auth endpoints work
-     *
-     * URL: GET http://localhost:8080/api/v1/auth/test
-     */
     @GetMapping("/test")
     public ResponseEntity<String> test() {
         return ResponseEntity.ok("Auth API is working!");
     }
 
-    // Error response ke liye inner class
     record ErrorResponse(String message) {}
 }

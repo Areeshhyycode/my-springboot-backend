@@ -4,11 +4,6 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
-/**
- * LOGIN REQUEST DTO
- *
- * Login ke liye sirf email aur password chahiye
- */
 @Data
 public class LoginRequest {
 

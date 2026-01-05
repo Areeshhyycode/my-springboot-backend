@@ -1,35 +1,39 @@
 package com.SmartPlanner.SmartPlanner.dto;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.RequiredArgsConstructor;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.List;
+
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 public class UserProfileResponse {
 
-    /**
-     * USER PROFILE RESPONSE DTO
-     * Frontend ko complete profile data bhejne ke liye
-     */
-
     private String id;
     private String userId;
-
-    // User basic info (from User model)
     private String username;
+    private String fullName;
     private String email;
-    private String role;  // Account Type: USER or ADMIN
-
-    // Profile info
     private String phoneNumber;
-    private LocalDate dateOfBirth;
-    private String address;
-    private String profilePhotoUrl;
-    private String language;
-    private String bio;
 
+    @JsonFormat(pattern = "yyyy-MM-dd")
+    private LocalDate dateOfBirth;
+
+    private String gender;
+    private String country;
+    private String city;
+    private String profilePhotoUrl;
+    private String bio;
+    private List<String> preferredTravelTypes;
+
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
+    private LocalDateTime createdAt;
+
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
+    private LocalDateTime updatedAt;
 }

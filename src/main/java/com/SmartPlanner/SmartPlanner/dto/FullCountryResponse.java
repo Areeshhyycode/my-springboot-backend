@@ -9,13 +9,6 @@ import lombok.NoArgsConstructor;
 import java.math.BigDecimal;
 import java.util.List;
 
-/**
- * FULL COUNTRY RESPONSE - Frontend ke liye nested response
- *
- * Country
- *   └── Cities (with weather)
- *         └── Activities
- */
 @Data
 @Builder
 @NoArgsConstructor
@@ -52,8 +45,10 @@ public class FullCountryResponse {
         private String id;
         private String name;
         private String description;
-        private BigDecimal pricePerHour;   // Price per hour
-        private BigDecimal pricePerDay;    // Price per day
+        private BigDecimal pricePerHour;
+        private BigDecimal pricePerDay;
         private String imageUrl;
+        private Double latitude;
+        private Double longitude;
     }
 }

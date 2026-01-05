@@ -9,24 +9,6 @@ import lombok.NoArgsConstructor;
 import java.math.BigDecimal;
 import java.util.List;
 
-/**
- * FULL COUNTRY REQUEST - Ek API mein Country + Cities + Activities add karo
- *
- * Example:
- * {
- *   "name": "United Arab Emirates",
- *   "code": "UAE",
- *   "cities": [
- *     {
- *       "name": "Dubai",
- *       "activities": [
- *         {"name": "Beach", "price": 50, "duration": 3},
- *         {"name": "Desert Safari", "price": 100, "duration": 5}
- *       ]
- *     }
- *   ]
- * }
- */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -61,8 +43,8 @@ public class FullCountryRequest {
         @NotBlank(message = "Activity name is required")
         private String name;
         private String description;
-        private BigDecimal pricePerHour;   // Price per hour
-        private BigDecimal pricePerDay;    // Price per day
+        private BigDecimal pricePerHour;
+        private BigDecimal pricePerDay;
         private String imageUrl;
     }
 }

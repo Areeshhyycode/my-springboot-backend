@@ -1,92 +1,77 @@
 package com.SmartPlanner.SmartPlanner.controller;
 
+import com.SmartPlanner.SmartPlanner.dto.PackingSuggestionsResponse;
+import com.SmartPlanner.SmartPlanner.dto.WeatherAlertsResponse;
 import com.SmartPlanner.SmartPlanner.dto.WeatherResponse;
+import com.SmartPlanner.SmartPlanner.service.WeatherAlertService;
 import com.SmartPlanner.SmartPlanner.service.WeatherService;
+import com.SmartPlanner.SmartPlanner.service.PackingSuggestionService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-/**
- * WEATHER CONTROLLER - Weather APIs
- *
- * Base URL: /api/v1/weather
- */
 @RestController
-@RequestMapping("/api/v1/weather")
+@RequestMapping("/api/weather")
 @RequiredArgsConstructor
 @CrossOrigin(origins = "*")
 public class WeatherController {
 
     private final WeatherService weatherService;
+    private final WeatherAlertService weatherAlertService;
+    private final PackingSuggestionService packingSuggestionService;
 
-    /**
-     * GET WEATHER BY CITY ID
-     *
-     * URL: GET /api/v1/weather/city/{cityId}
-     *
-     * Example: GET /api/v1/weather/city/507f1f77bcf86cd799439011
-     *
-     * Response: WeatherResponse with current + hourly weather
-     */
     @GetMapping("/city/{cityId}")
-    public ResponseEntity<?> getWeatherByCityId(@PathVariable String cityId) {
-        try {
-            WeatherResponse weather = weatherService.getWeatherByCityId(cityId);
-            return ResponseEntity.ok(weather);
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(new ErrorResponse(e.getMessage()));
-        }
+    public ResponseEntity<WeatherResponse> getWeatherByCityId(@PathVariable String cityId) {
+        WeatherResponse response = weatherService.getWeatherByCityId(cityId);
+        return ResponseEntity.ok(response);
     }
 
-    /**
-     * GET WEATHER BY CITY NAME
-     *
-     * URL: GET /api/v1/weather/city?name=Karachi
-     *
-     * Example: GET /api/v1/weather/city?name=Karachi
-     *
-     * Response: WeatherResponse with current + hourly weather
-     */
-    @GetMapping("/city")
-    public ResponseEntity<?> getWeatherByCityName(@RequestParam String name) {
-        try {
-            WeatherResponse weather = weatherService.getWeatherByCityName(name);
-            return ResponseEntity.ok(weather);
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(new ErrorResponse(e.getMessage()));
-        }
+    @GetMapping("/city/name/{cityName}")
+    public ResponseEntity<WeatherResponse> getWeatherByCityName(@PathVariable String cityName) {
+        WeatherResponse response = weatherService.getWeatherByCityName(cityName);
+        return ResponseEntity.ok(response);
     }
 
-    /**
-     * GET WEATHER BY COORDINATES (Direct - without saving city)
-     *
-     * URL: GET /api/v1/weather/coordinates?lat=24.86&lon=67.01&name=Karachi
-     *
-     * Example: GET /api/v1/weather/coordinates?lat=24.86&lon=67.01&name=MyLocation
-     */
     @GetMapping("/coordinates")
-    public ResponseEntity<?> getWeatherByCoordinates(
+    public ResponseEntity<WeatherResponse> getWeatherByCoordinates(
             @RequestParam Double lat,
             @RequestParam Double lon,
-            @RequestParam(defaultValue = "Unknown") String name) {
-        try {
-            WeatherResponse weather = weatherService.getWeatherByCoordinates(lat, lon, name);
-            return ResponseEntity.ok(weather);
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(new ErrorResponse(e.getMessage()));
-        }
+            @RequestParam(required = false) String cityName) {
+        WeatherResponse response = weatherService.getWeatherByCoordinates(lat, lon,
+                cityName != null ? cityName : "Unknown");
+        return ResponseEntity.ok(response);
     }
 
-    /**
-     * TEST ENDPOINT
-     *
-     * URL: GET /api/v1/weather/test
-     */
-    @GetMapping("/test")
-    public ResponseEntity<String> test() {
-        return ResponseEntity.ok("Weather API is working!");
+    @GetMapping("/alerts/city/{cityId}")
+    public ResponseEntity<WeatherAlertsResponse> getWeatherAlertsByCityId(@PathVariable String cityId) {
+        WeatherAlertsResponse response = weatherAlertService.getAlertsByCityId(cityId);
+        return ResponseEntity.ok(response);
     }
 
-    // Error response record
-    record ErrorResponse(String message) {}
+    @GetMapping("/alerts/coordinates")
+    public ResponseEntity<WeatherAlertsResponse> getWeatherAlertsByCoordinates(
+            @RequestParam Double lat,
+            @RequestParam Double lon,
+            @RequestParam String cityName) {
+        WeatherAlertsResponse response = weatherAlertService.getAlertsByCoordinates(lat, lon, cityName);
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/packing/city/{cityId}")
+    public ResponseEntity<PackingSuggestionsResponse> getPackingSuggestionsByCityId(@PathVariable String cityId) {
+        PackingSuggestionsResponse response = packingSuggestionService.getPackingSuggestionsByCityId(cityId);
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/packing/coordinates")
+    public ResponseEntity<PackingSuggestionsResponse> getPackingSuggestionsByCoordinates(
+            @RequestParam Double lat,
+            @RequestParam Double lon,
+            @RequestParam String cityName,
+            @RequestParam(required = false) String country) {
+        PackingSuggestionsResponse response = packingSuggestionService
+                .getPackingSuggestionsByCoordinates(lat, lon, cityName,
+                        country != null ? country : "");
+        return ResponseEntity.ok(response);
+    }
 }

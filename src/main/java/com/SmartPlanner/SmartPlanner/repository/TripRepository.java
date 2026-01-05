@@ -6,23 +6,19 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 
-/**
- * TRIP REPOSITORY - Database operations for trips
- */
 @Repository
 public interface TripRepository extends MongoRepository<Trip, String> {
 
-    // User ke trips
     List<Trip> findByUserId(String userId);
 
     List<Trip> findByUserEmail(String userEmail);
 
-    // City ke trips
     List<Trip> findByCityId(String cityId);
 
-    // Status ke hisab se
     List<Trip> findByUserIdAndStatus(String userId, Trip.TripStatus status);
 
-    // User ke recent trips
     List<Trip> findByUserIdOrderByCreatedAtDesc(String userId);
+
+    // For scheduler - find all trips by status
+    List<Trip> findByStatus(Trip.TripStatus status);
 }

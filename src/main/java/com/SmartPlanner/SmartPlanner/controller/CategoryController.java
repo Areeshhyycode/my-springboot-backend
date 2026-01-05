@@ -11,21 +11,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-/**
- * CATEGORY CONTROLLER - Category APIs
- *
- * Base URL: /api/v1/categories
- *
- * PUBLIC APIs (All users):
- *   - GET /api/v1/categories - Get all categories
- *   - GET /api/v1/categories/{id} - Get category by ID
- *   - GET /api/v1/categories/city/{cityId} - Get categories by city
- *
- * ADMIN ONLY APIs:
- *   - POST /api/v1/admin/categories - Add category
- *   - PUT /api/v1/admin/categories/{id} - Update category
- *   - DELETE /api/v1/admin/categories/{id} - Delete category
- */
 @RestController
 @RequiredArgsConstructor
 @CrossOrigin(origins = "*")
@@ -33,21 +18,11 @@ public class CategoryController {
 
     private final CategoryService categoryService;
 
-    // ==================== PUBLIC APIs (All Users) ====================
-
-    /**
-     * GET ALL CATEGORIES
-     * URL: GET /api/v1/categories
-     */
     @GetMapping("/api/v1/categories")
     public ResponseEntity<List<Category>> getAllCategories() {
         return ResponseEntity.ok(categoryService.getAllCategories());
     }
 
-    /**
-     * GET CATEGORY BY ID
-     * URL: GET /api/v1/categories/{id}
-     */
     @GetMapping("/api/v1/categories/{id}")
     public ResponseEntity<?> getCategoryById(@PathVariable String id) {
         try {
@@ -57,12 +32,6 @@ public class CategoryController {
         }
     }
 
-    /**
-     * GET CATEGORIES BY CITY
-     * URL: GET /api/v1/categories/city/{cityId}
-     *
-     * Jab user city card click kare, ye API call hogi
-     */
     @GetMapping("/api/v1/categories/city/{cityId}")
     public ResponseEntity<?> getCategoriesByCity(@PathVariable String cityId) {
         try {
@@ -72,23 +41,6 @@ public class CategoryController {
         }
     }
 
-    // ==================== ADMIN ONLY APIs ====================
-
-    /**
-     * ADD NEW CATEGORY (Admin Only)
-     *
-     * URL: POST /api/v1/admin/categories
-     *
-     * Request Body:
-     * {
-     *   "name": "Fishing",
-     *   "description": "Deep sea fishing",
-     *   "cityId": "676abc123...",
-     *   "price": 150.00,
-     *   "imageUrl": "/images/fishing.jpg",
-     *   "duration": 4
-     * }
-     */
     @PostMapping("/api/v1/admin/categories")
     public ResponseEntity<?> addCategory(@Valid @RequestBody CategoryRequest request) {
         try {
@@ -99,10 +51,6 @@ public class CategoryController {
         }
     }
 
-    /**
-     * UPDATE CATEGORY (Admin Only)
-     * URL: PUT /api/v1/admin/categories/{id}
-     */
     @PutMapping("/api/v1/admin/categories/{id}")
     public ResponseEntity<?> updateCategory(@PathVariable String id, @Valid @RequestBody CategoryRequest request) {
         try {
@@ -113,10 +61,6 @@ public class CategoryController {
         }
     }
 
-    /**
-     * DELETE CATEGORY (Admin Only)
-     * URL: DELETE /api/v1/admin/categories/{id}
-     */
     @DeleteMapping("/api/v1/admin/categories/{id}")
     public ResponseEntity<?> deleteCategory(@PathVariable String id) {
         try {
@@ -127,10 +71,6 @@ public class CategoryController {
         }
     }
 
-    /**
-     * TOGGLE CATEGORY STATUS (Admin Only)
-     * URL: PATCH /api/v1/admin/categories/{id}/toggle
-     */
     @PatchMapping("/api/v1/admin/categories/{id}/toggle")
     public ResponseEntity<?> toggleCategoryStatus(@PathVariable String id) {
         try {
@@ -141,10 +81,6 @@ public class CategoryController {
         }
     }
 
-    /**
-     * ADD SAMPLE CATEGORIES (Admin Only)
-     * URL: POST /api/v1/admin/categories/seed/{cityId}
-     */
     @PostMapping("/api/v1/admin/categories/seed/{cityId}")
     public ResponseEntity<?> seedCategories(@PathVariable String cityId) {
         try {
@@ -154,7 +90,6 @@ public class CategoryController {
         }
     }
 
-    // Response records
     record ErrorResponse(String message) {}
     record SuccessResponse(String message) {}
 }

@@ -17,9 +17,6 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * COUNTRY SERVICE - Country CRUD + Full nested operations
- */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -31,25 +28,14 @@ public class CountryService {
     private final GeocodingService geocodingService;
     private final WeatherService weatherService;
 
-    // ==================== GET APIs ====================
-
-    /**
-     * Get all countries (basic)
-     */
     public List<Country> getAllCountries() {
         return countryRepository.findAll();
     }
 
-    /**
-     * Get active countries only
-     */
     public List<Country> getActiveCountries() {
         return countryRepository.findByIsActiveTrue();
     }
 
-    /**
-     * GET ALL DATA - Countries with Cities and Activities (for Frontend)
-     */
     public List<FullCountryResponse> getAllCountriesWithCitiesAndActivities() {
         List<Country> countries = countryRepository.findByIsActiveTrue();
         List<FullCountryResponse> result = new ArrayList<>();
@@ -61,17 +47,11 @@ public class CountryService {
         return result;
     }
 
-    /**
-     * GET SINGLE COUNTRY with all Cities and Activities
-     */
     public FullCountryResponse getCountryWithCitiesAndActivities(String countryId) {
         Country country = getCountryById(countryId);
         return buildFullCountryResponse(country);
     }
 
-    /**
-     * Build full nested response for a country
-     */
     private FullCountryResponse buildFullCountryResponse(Country country) {
         List<City> cities = cityRepository.findByCountryIdAndIsActiveTrue(country.getId());
         List<FullCountryResponse.CityWithActivities> cityList = new ArrayList<>();
@@ -88,6 +68,8 @@ public class CountryService {
                         .pricePerHour(activity.getPricePerHour())
                         .pricePerDay(activity.getPricePerDay())
                         .imageUrl(activity.getImageUrl())
+                        .latitude(activity.getLatitude())
+                        .longitude(activity.getLongitude())
                         .build());
             }
 
@@ -113,19 +95,11 @@ public class CountryService {
                 .build();
     }
 
-    // ==================== CREATE APIs ====================
-
-    /**
-     * Get country by ID
-     */
     public Country getCountryById(String id) {
         return countryRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Country not found with id: " + id));
     }
 
-    /**
-     * Add new country (simple)
-     */
     public Country addCountry(CountryRequest request) {
         if (countryRepository.existsByNameIgnoreCase(request.getName())) {
             throw new RuntimeException("Country already exists: " + request.getName());
@@ -143,13 +117,9 @@ public class CountryService {
         return countryRepository.save(country);
     }
 
-    /**
-     * ADD FULL COUNTRY - Country + Cities + Activities in one API
-     */
     public FullCountryResponse addFullCountry(FullCountryRequest request) {
         log.info("Adding full country: {} with {} cities", request.getName(), request.getCities().size());
 
-        // Step 1: Create Country
         if (countryRepository.existsByNameIgnoreCase(request.getName())) {
             throw new RuntimeException("Country already exists: " + request.getName());
         }
@@ -166,19 +136,15 @@ public class CountryService {
 
         log.info("Country created: {} ({})", country.getName(), country.getId());
 
-        // Step 2: Create Cities with Activities
         for (FullCountryRequest.CityData cityData : request.getCities()) {
             try {
-                // Fetch coordinates
                 GeocodingService.GeoLocation location = geocodingService.getCoordinates(cityData.getName());
 
-                // Fetch weather
                 City.CityWeather weather = weatherService.fetchCityWeather(
                         location.getLatitude(),
                         location.getLongitude()
                 );
 
-                // Create city
                 City city = new City();
                 city.setCountryId(country.getId());
                 city.setCountryName(country.getName());
@@ -196,7 +162,6 @@ public class CountryService {
 
                 log.info("City created: {} in {}", city.getName(), country.getName());
 
-                // Step 3: Create Activities for this city
                 if (cityData.getActivities() != null) {
                     for (FullCountryRequest.ActivityData actData : cityData.getActivities()) {
                         Category activity = new Category();
@@ -218,15 +183,9 @@ public class CountryService {
             }
         }
 
-        // Return full response
         return buildFullCountryResponse(country);
     }
 
-    // ==================== UPDATE APIs ====================
-
-    /**
-     * Update country
-     */
     public Country updateCountry(String id, CountryRequest request) {
         Country country = getCountryById(id);
 
@@ -241,33 +200,22 @@ public class CountryService {
         return countryRepository.save(country);
     }
 
-    // ==================== DELETE APIs ====================
-
-    /**
-     * Delete country (and all its cities and activities)
-     */
     public void deleteCountry(String id) {
         Country country = getCountryById(id);
 
-        // Delete all activities in all cities of this country
         List<City> cities = cityRepository.findByCountryId(id);
         for (City city : cities) {
             List<Category> activities = categoryRepository.findByCityId(city.getId());
             categoryRepository.deleteAll(activities);
         }
 
-        // Delete all cities
         cityRepository.deleteAll(cities);
 
-        // Delete country
         countryRepository.deleteById(id);
 
         log.info("Deleted country {} with {} cities", country.getName(), cities.size());
     }
 
-    /**
-     * Toggle country active status
-     */
     public Country toggleCountryStatus(String id) {
         Country country = getCountryById(id);
         country.setIsActive(!country.getIsActive());
@@ -275,9 +223,6 @@ public class CountryService {
         return countryRepository.save(country);
     }
 
-    /**
-     * Generate country code from name
-     */
     private String generateCode(String name) {
         if (name.length() <= 3) {
             return name.toUpperCase();

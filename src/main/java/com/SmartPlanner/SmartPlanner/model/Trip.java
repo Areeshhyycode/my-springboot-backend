@@ -11,17 +11,6 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
-/**
- * TRIP MODEL - User ka trip plan store karta hai
- *
- * User select karega:
- * - City
- * - Duration (days)
- * - Activities
- *
- * Backend calculate karega:
- * - Total cost based on selected activities
- */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -31,60 +20,50 @@ public class Trip {
     @Id
     private String id;
 
-    // User info
     private String userId;
     private String userEmail;
 
-    // City info
     private String cityId;
     private String cityName;
     private String country;
 
-    // Trip dates
     private LocalDate startDate;
     private LocalDate endDate;
     private Integer durationDays;
 
-    // Selected activities
     private List<SelectedActivity> selectedActivities;
 
-    // Cost calculation
     private BigDecimal totalCost;
     private String currency = "USD";
 
-    // Weather at time of booking
     private City.CityWeather weatherSnapshot;
 
-    // Trip status
     private TripStatus status = TripStatus.PLANNED;
 
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
-    /**
-     * Selected Activity - User ne jo activity select ki
-     */
     @Data
     @NoArgsConstructor
     @AllArgsConstructor
     public static class SelectedActivity {
         private String activityId;
-        private String activityName;
-        private String durationType;    // "HOURS" or "DAYS"
-        private Integer durationValue;  // e.g., 3 hours or 2 days
-        private BigDecimal unitPrice;   // price per hour or per day
-        private Integer quantity;       // kitni baar (default 1)
-        private BigDecimal subtotal;    // unitPrice * durationValue * quantity
+        private String name;
+        private String durationType;
+        private Integer durationValue;
+        private BigDecimal unitPrice;
+        private Integer quantity;
+        private BigDecimal subtotal;
+        private Double latitude;
+        private Double longitude;
     }
 
-    /**
-     * Trip Status
-     */
     public enum TripStatus {
-        PLANNED,      // Trip planned but not confirmed
-        CONFIRMED,    // Trip confirmed
-        IN_PROGRESS,  // Currently on trip
-        COMPLETED,    // Trip completed
-        CANCELLED     // Trip cancelled
+        PLANNED,
+        CONFIRMED,    // Legacy status
+        ONGOING,
+        IN_PROGRESS,  // Legacy status - same as ONGOING
+        COMPLETED,
+        CANCELLED
     }
 }

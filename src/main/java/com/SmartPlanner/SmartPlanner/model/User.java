@@ -1,47 +1,75 @@
 package com.SmartPlanner.SmartPlanner.model;
 
-import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.RequiredArgsConstructor;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
-import org.springframework.data.mongodb.core.index.Indexed;
+import org.springframework.data.mongodb.core.mapping.Field;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
 
 import java.time.LocalDateTime;
+import java.util.Collection;
+import java.util.List;
 
-/**
- * USER MODEL - Database mein user ka data store hota hai
- *
- * @Document - MongoDB collection ka naam (jaise SQL mein table)
- * @Data - Lombok: Automatically getter, setter, toString generate karta hai
- * @Id - Primary key (unique identifier)
- * @Indexed(unique=true) - Unique constraint (duplicate email nahi ho sakti)
- */
-@Data                           // Getter/Setter auto-generate
-@NoArgsConstructor              // Empty constructor: new User()
-@AllArgsConstructor// All fields constructor: new User(id, username, ...)
-@Document(collection = "users") // MongoDB collection name = "users"
-public class User {
+@Data
+@Document(collection = "users")
+public class User implements UserDetails {
 
-    @Id                         // Primary Key - MongoDB automatically ObjectId generate karta hai
+    @Id
     private String id;
 
     private String username;
-
-    @Indexed(unique = true)     // Email unique honi chahiye (duplicate nahi)
     private String email;
+    private String password;
+    private String fullName;
+    private Role role = Role.USER;
 
-    private String password;    // Hashed password store hoga (plain text nahi)
-
-    private Role role = Role.USER;  // Default role USER hai, ADMIN manually set hoga
-
+    @Field("created_at")
     private LocalDateTime createdAt;
 
+    @Field("updated_at")
     private LocalDateTime updatedAt;
 
-    // User preferences
-    private String temperatureUnit = "C";  // C = Celsius, F = Fahrenheit
-    private String speedUnit = "km/h";     // km/h ya mph
-    private String theme = "light";        // light ya dark
+    // Constructors
+    public User() {
+        this.createdAt = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    public User(String username, String email, String password, String fullName) {
+        this.username = username;
+        this.email = email;
+        this.password = password;
+        this.fullName = fullName;
+        this.role = Role.USER;
+        this.createdAt = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    // UserDetails methods
+    @Override
+    public Collection<? extends GrantedAuthority> getAuthorities() {
+        return List.of(new SimpleGrantedAuthority("ROLE_" + role.name()));
+    }
+
+    @Override
+    public boolean isAccountNonExpired() {
+        return true;
+    }
+
+    @Override
+    public boolean isAccountNonLocked() {
+        return true;
+    }
+
+    @Override
+    public boolean isCredentialsNonExpired() {
+        return true;
+    }
+
+    @Override
+    public boolean isEnabled() {
+        return true;
+    }
 }
